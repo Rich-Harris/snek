@@ -1,7 +1,7 @@
 <script lang="ts">
-	import snek from '$lib/images/snek.png';
-	import powerup from '$lib/audio/powerup.wav';
 	import gameover from '$lib/audio/gameover.wav';
+	import powerup from '$lib/audio/powerup.wav';
+	import snek from '$lib/images/snek.png';
 	import { innerWidth } from 'svelte/reactivity/window';
 
 	// Grid size
@@ -9,8 +9,10 @@
 	const CELL_SIZE = $derived(Math.min(20, ((innerWidth.current as number) - 40) / GRID_SIZE));
 
 	// Game state
-	let direction = $state<'up' | 'down' | 'left' | 'right'>('right');
-	let snake = $state([[0, 0]]); // Array of [x, y] coordinates
+	let directionBuffer = $state<('up' | 'down' | 'left' | 'right')[]>([]);
+	let currentDirection = $state<'up' | 'down' | 'left' | 'right'>('right');
+	let lastInputtedDirection = $derived(directionBuffer.at(-1) || currentDirection);
+	let snake = $state<[number, number][]>([[0, 0]]); // Array of [x, y] coordinates
 	let food = $state<[number, number]>([5, 5]);
 	let score = $state(0);
 	let gameOver = $state(false);
@@ -45,7 +47,8 @@
 
 	function resetGame() {
 		snake = [[0, 0]];
-		direction = 'right';
+		currentDirection = 'right';
+		directionBuffer = [];
 		score = 0;
 		gameOver = false;
 		placeFood();
@@ -69,11 +72,14 @@
 			return;
 		}
 
+		// Get new current position from Buffer
+		currentDirection = directionBuffer.shift() || currentDirection;
+
 		const head = snake[0];
 		let newHead: [number, number];
 
 		// Calculate new head position
-		switch (direction) {
+		switch (currentDirection) {
 			case 'up':
 				newHead = [head[0], head[1] - 1];
 				break;
@@ -116,16 +122,16 @@
 	function handleKeydown(event: KeyboardEvent) {
 		switch (event.key) {
 			case 'ArrowUp':
-				if (direction !== 'down') direction = 'up';
+				if (lastInputtedDirection !== 'down') directionBuffer.push('up');
 				break;
 			case 'ArrowDown':
-				if (direction !== 'up') direction = 'down';
+				if (lastInputtedDirection !== 'up') directionBuffer.push('down');
 				break;
 			case 'ArrowLeft':
-				if (direction !== 'right') direction = 'left';
+				if (lastInputtedDirection !== 'right') directionBuffer.push('left');
 				break;
 			case 'ArrowRight':
-				if (direction !== 'left') direction = 'right';
+				if (lastInputtedDirection !== 'left') directionBuffer.push('right');
 				break;
 		}
 	}
@@ -136,15 +142,15 @@
 
 		if (Math.abs(x) > Math.abs(y)) {
 			if (x > 0) {
-				if (direction !== 'left') direction = 'right';
+				if (lastInputtedDirection !== 'left') directionBuffer.push('right');
 			} else {
-				if (direction !== 'right') direction = 'left';
+				if (lastInputtedDirection !== 'right') directionBuffer.push('left');
 			}
 		} else {
 			if (y > 0) {
-				if (direction !== 'up') direction = 'down';
+				if (lastInputtedDirection !== 'up') directionBuffer.push('down');
 			} else {
-				if (direction !== 'down') direction = 'up';
+				if (lastInputtedDirection !== 'down') directionBuffer.push('up');
 			}
 		}
 	}
