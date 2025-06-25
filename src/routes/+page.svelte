@@ -67,10 +67,19 @@
 		food = newFood;
 	}
 
+	function isOpposite(dir1: Direction, dir2: Direction): boolean {
+		return (
+			(dir1 === 'up' && dir2 === 'down') ||
+			(dir1 === 'down' && dir2 === 'up') ||
+			(dir1 === 'left' && dir2 === 'right') ||
+			(dir1 === 'right' && dir2 === 'left')
+		);
+	}
+
 	function pushDirection(newDirection: Direction) {
-		if (newDirection !== lastDirection) {
+		const lastBuffered = directionBuffer.length > 0 ? directionBuffer[directionBuffer.length - 1] : direction;
+		if (newDirection !== lastBuffered && !isOpposite(newDirection, lastBuffered)) {
 			directionBuffer.push(newDirection);
-			lastDirection = newDirection;
 		}
 	}
 
@@ -130,6 +139,15 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
+		// Prevent default scroll for arrow keys
+		switch (event.key) {
+			case 'ArrowUp':
+			case 'ArrowDown':
+			case 'ArrowLeft':
+			case 'ArrowRight':
+				event.preventDefault();
+				break;
+		}
 		switch (event.key) {
 			case 'ArrowUp':
 				pushDirection('up');
